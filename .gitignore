@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Instagram data export
+export/
+
+# Hand-curated username lists
+data/*.txt
+!data/.gitkeep
+
+# macOS
+.DS_Store
