@@ -9,6 +9,8 @@ sent a follow request to that haven't responded — from your own data export
 1. Request your data export from Instagram in **JSON** format (Settings → Accounts
    Center → Your information and permissions → Download your information).
 2. Unzip it and note the path to `connections/followers_and_following/`.
+3. Run `make install` to create a `.venv` and install the package with its dev
+   dependencies (`ruff`, `pytest`).
 
 ## Usage
 
@@ -70,5 +72,15 @@ unfollow_unfollowers/
     non_followers.py      # accounts you follow that don't follow back
     pending_requests.py   # sent follow requests still pending
     unfollow.py            # removes a username after you've unfollowed them
+tests/                    # unit tests, one file per module above
 data/                     # your hand-curated username lists (gitignored)
+```
+
+## Development
+
+```sh
+make install   # create .venv and install with dev dependencies
+make format    # ruff format + autofix
+make lint      # ruff check
+make test      # pytest
 ```
