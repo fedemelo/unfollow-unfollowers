@@ -9,14 +9,14 @@ sent a follow request to that haven't responded — from your own data export
 1. Request your data export from Instagram in **JSON** format (Settings → Accounts
    Center → Your information and permissions → Download your information).
 2. Unzip it and note the path to `connections/followers_and_following/`.
-3. Run `make install` to create a `.venv` and install the package with its dev
-   dependencies (`ruff`, `pytest`).
+3. Install the [Rust toolchain](https://rustup.rs) if you don't already have it.
+   `cargo build` will fetch dependencies and compile the binaries.
 
 ## Usage
 
 ```sh
-python3 -m unfollow_unfollowers.non_followers [export_dir]
-python3 -m unfollow_unfollowers.pending_requests [export_dir]
+cargo run --bin non_followers -- [export_dir]
+cargo run --bin pending_requests -- [export_dir]
 ```
 
 Or, with the default `export_dir`, via the Makefile shortcuts:
@@ -50,7 +50,7 @@ Your export is a static snapshot, so an account you just unfollowed will keep
 showing up on every rerun until you re-export. Instead, tell the tool directly:
 
 ```sh
-python3 -m unfollow_unfollowers.unfollow <username>
+cargo run --bin unfollow -- <username>
 # or
 make unfollow username=<username>
 ```
@@ -67,7 +67,7 @@ close friends you always expect to have active. Diff it against your actual
 close friends list from the export:
 
 ```sh
-python3 -m unfollow_unfollowers.close_friends [export_dir]
+cargo run --bin close_friends -- [export_dir]
 # or
 make close
 ```
@@ -79,25 +79,26 @@ your standard list but missing from the actual one.
 ## Project layout
 
 ```
-unfollow_unfollowers/
-    export.py            # parses the raw Instagram export JSON
-    mutate.py             # removes a username from the local export/lists after you unfollow
-    lists.py              # loads data/*.txt and applies exclusion/known-disabled filters
-    formatting.py         # profile URL formatting and output
-    cli.py                 # shared argparse setup for the read-only commands
-    non_followers.py      # accounts you follow that don't follow back
-    pending_requests.py   # sent follow requests still pending
-    unfollow.py            # removes a username after you've unfollowed them
-    close_friends.py      # diffs actual vs. standard close friends list
-tests/                    # unit tests, one file per module above
+src/
+    export.rs             # parses the raw Instagram export JSON
+    mutate.rs              # removes a username from the local export/lists after you unfollow
+    lists.rs               # loads data/*.txt and applies exclusion/known-disabled filters
+    formatting.rs          # profile URL formatting and output
+    cli.rs                  # shared clap setup for the read-only commands
+    non_followers.rs       # accounts you follow that don't follow back
+    pending_requests.rs    # sent follow requests still pending
+    unfollow.rs             # removes a username after you've unfollowed them
+    close_friends.rs       # diffs actual vs. standard close friends list
+    test_support.rs        # shared test fixtures (JSON/file builders)
+    bin/                    # thin entry points, one per binary above
 data/                     # your hand-curated username lists (gitignored)
 ```
 
 ## Development
 
 ```sh
-make install   # create .venv and install with dev dependencies
-make format    # ruff format + autofix
-make lint      # ruff check
-make test      # pytest
+cargo build    # compile
+make format    # cargo fmt + clippy --fix
+make lint      # cargo fmt --check + clippy
+make test      # cargo test
 ```
