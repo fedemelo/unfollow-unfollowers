@@ -21,7 +21,7 @@ def build_parser(description: str) -> argparse.ArgumentParser:
         "--exclusions",
         type=Path,
         default=DEFAULT_EXCLUSIONS,
-        help="Path to a text file of usernames (one per line, # comments allowed) to never suggest unfollowing",
+        help="Path to a text file of usernames (one per line, # comments) to never unfollow",
     )
     parser.add_argument(
         "--known-disabled",
@@ -32,7 +32,7 @@ def build_parser(description: str) -> argparse.ArgumentParser:
     parser.add_argument(
         "--recheck-disabled",
         action="store_true",
-        help="Include accounts from --known-disabled in the output, to manually re-verify whether they're back",
+        help="Include accounts from --known-disabled, to manually re-verify whether they're back",
     )
     return parser
 

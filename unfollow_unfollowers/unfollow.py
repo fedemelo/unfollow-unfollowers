@@ -25,7 +25,7 @@ def unfollow(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Remove a username you've just unfollowed from the local export and username lists."
+        description="Remove a username you've just unfollowed from the local export and lists."
     )
     parser.add_argument("username")
     parser.add_argument("--export-dir", type=Path, default=DEFAULT_EXPORT_DIR)

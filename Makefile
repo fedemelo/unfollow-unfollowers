@@ -1,4 +1,18 @@
-.PHONY: non-followers pending recheck-disabled unfollow
+.PHONY: install format lint test non-followers pending recheck-disabled unfollow
+
+install:
+	python3 -m venv .venv
+	.venv/bin/pip install -e ".[dev]"
+
+format:
+	.venv/bin/ruff format .
+	.venv/bin/ruff check --fix .
+
+lint:
+	.venv/bin/ruff check .
+
+test:
+	.venv/bin/pytest
 
 non-followers:
 	python3 -m unfollow_unfollowers.non_followers
