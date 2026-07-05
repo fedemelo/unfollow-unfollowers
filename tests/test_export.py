@@ -1,13 +1,19 @@
 from unfollow_unfollowers.export import (
     entry_usernames,
     is_deleted_account,
+    label_value_username,
+    load_close_friends,
     load_followers,
     load_following,
     load_pending_follow_requests,
-    pending_request_username,
 )
 
-from .factories import write_followers, write_following, write_pending_follow_requests
+from .factories import (
+    write_close_friends,
+    write_followers,
+    write_following,
+    write_pending_follow_requests,
+)
 
 
 def test_entry_usernames_reads_value_when_present():
@@ -40,19 +46,24 @@ def test_load_following(export_dir):
     assert load_following(export_dir) == {"alice", "carol"}
 
 
-def test_pending_request_username_found():
+def test_label_value_username_found():
     entry = {"label_values": [{"label": "Username", "value": "dave"}]}
-    assert pending_request_username(entry) == "dave"
+    assert label_value_username(entry) == "dave"
 
 
-def test_pending_request_username_missing():
+def test_label_value_username_missing():
     entry = {"label_values": [{"label": "Name", "value": "Dave"}]}
-    assert pending_request_username(entry) is None
+    assert label_value_username(entry) is None
 
 
 def test_load_pending_follow_requests(export_dir):
     write_pending_follow_requests(export_dir, ["dave", "erin"])
     assert load_pending_follow_requests(export_dir) == {"dave", "erin"}
+
+
+def test_load_close_friends(export_dir):
+    write_close_friends(export_dir, ["frank", "grace"])
+    assert load_close_friends(export_dir) == {"frank", "grace"}
 
 
 def test_is_deleted_account():

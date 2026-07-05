@@ -60,6 +60,22 @@ in your local export, and from `data/excluded_accounts.txt` /
 `data/known_disabled_accounts.txt` if it was listed there — so it won't appear
 again on the next run.
 
+## Close friends check
+
+`data/standard_close_friends.txt` is your hand-curated "day ones" list — the
+close friends you always expect to have active. Diff it against your actual
+close friends list from the export:
+
+```sh
+python3 -m unfollow_unfollowers.close_friends [export_dir]
+# or
+make close
+```
+
+Output is a diff: `-username` means they're in your actual close friends list
+but not expected per your standard list; `+username` means they're expected per
+your standard list but missing from the actual one.
+
 ## Project layout
 
 ```
@@ -72,6 +88,7 @@ unfollow_unfollowers/
     non_followers.py      # accounts you follow that don't follow back
     pending_requests.py   # sent follow requests still pending
     unfollow.py            # removes a username after you've unfollowed them
+    close_friends.py      # diffs actual vs. standard close friends list
 tests/                    # unit tests, one file per module above
 data/                     # your hand-curated username lists (gitignored)
 ```

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from .export import entry_usernames, pending_request_username
+from .export import entry_usernames, label_value_username
 
 
 def _write_json(path: Path, data) -> None:
@@ -27,7 +27,7 @@ def remove_from_pending_requests(export_dir: Path, username: str) -> bool:
     if not path.exists():
         return False
     entries = json.loads(path.read_text())
-    filtered = [entry for entry in entries if pending_request_username(entry) != username]
+    filtered = [entry for entry in entries if label_value_username(entry) != username]
     if len(filtered) == len(entries):
         return False
     _write_json(path, filtered)

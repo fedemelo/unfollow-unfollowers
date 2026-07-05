@@ -33,8 +33,8 @@ def write_following(export_dir: Path, usernames: list[str]) -> None:
     (export_dir / "following.json").write_text(json.dumps(data))
 
 
-def write_pending_follow_requests(export_dir: Path, usernames: list[str]) -> None:
-    data = [
+def _label_value_entries(usernames: list[str]) -> list[dict]:
+    return [
         {
             "timestamp": 0,
             "media": [],
@@ -47,7 +47,16 @@ def write_pending_follow_requests(export_dir: Path, usernames: list[str]) -> Non
         }
         for username in usernames
     ]
+
+
+def write_pending_follow_requests(export_dir: Path, usernames: list[str]) -> None:
+    data = _label_value_entries(usernames)
     (export_dir / "pending_follow_requests.json").write_text(json.dumps(data))
+
+
+def write_close_friends(export_dir: Path, usernames: list[str]) -> None:
+    data = _label_value_entries(usernames)
+    (export_dir / "close_friends.json").write_text(json.dumps(data))
 
 
 def write_username_list(path: Path, lines: list[str]) -> None:

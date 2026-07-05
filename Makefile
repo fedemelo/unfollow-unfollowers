@@ -1,4 +1,4 @@
-.PHONY: install format lint test non-followers pending recheck-disabled unfollow
+.PHONY: install format lint test non-followers pending recheck-disabled unfollow close
 
 install:
 	python3 -m venv .venv
@@ -25,3 +25,6 @@ recheck-disabled:
 
 unfollow:
 	python3 -m unfollow_unfollowers.unfollow $(username)
+
+close:
+	python3 -m unfollow_unfollowers.close_friends
