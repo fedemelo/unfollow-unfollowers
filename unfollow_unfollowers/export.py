@@ -29,5 +29,17 @@ def load_following(export_dir: Path) -> set[str]:
     return _usernames_from_string_list_data(data["relationships_following"])
 
 
+def pending_request_username(entry: dict) -> str | None:
+    for label_value in entry.get("label_values", []):
+        if label_value.get("label") == "Username":
+            return label_value["value"]
+    return None
+
+
+def load_pending_follow_requests(export_dir: Path) -> set[str]:
+    data = json.loads((export_dir / "pending_follow_requests.json").read_text())
+    return {pending_request_username(entry) for entry in data} - {None}
+
+
 def is_deleted_account(username: str) -> bool:
     return username.startswith("__deleted__")
