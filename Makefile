@@ -1,30 +1,30 @@
-.PHONY: install format lint test non-followers pending recheck-disabled unfollow close
+.PHONY: build format lint test non-followers pending recheck-disabled unfollow close
 
-install:
-	python3 -m venv .venv
-	.venv/bin/pip install -e ".[dev]"
+build:
+	cargo build
 
 format:
-	.venv/bin/ruff format .
-	.venv/bin/ruff check --fix .
+	cargo fmt
+	cargo clippy --all-targets --fix --allow-dirty
 
 lint:
-	.venv/bin/ruff check .
+	cargo fmt --check
+	cargo clippy --all-targets -- -D warnings
 
 test:
-	.venv/bin/pytest
+	cargo test
 
 non-followers:
-	python3 -m unfollow_unfollowers.non_followers
+	cargo run --bin non_followers
 
 pending:
-	python3 -m unfollow_unfollowers.pending_requests
+	cargo run --bin pending_requests
 
 recheck-disabled:
-	python3 -m unfollow_unfollowers.non_followers --recheck-disabled
+	cargo run --bin non_followers -- --recheck-disabled
 
 unfollow:
-	python3 -m unfollow_unfollowers.unfollow $(username)
+	cargo run --bin unfollow -- $(username)
 
 close:
-	python3 -m unfollow_unfollowers.close_friends
+	cargo run --bin close_friends
