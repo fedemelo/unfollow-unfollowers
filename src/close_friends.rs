@@ -5,9 +5,11 @@ use clap::Parser;
 
 use crate::cli::DEFAULT_EXPORT_DIR;
 use crate::export::load_close_friends;
+use crate::formatting::save_report;
 use crate::lists::load_username_list;
 
 pub const DEFAULT_STANDARD_CLOSE_FRIENDS: &str = "data/standard_close_friends.txt";
+pub const DEFAULT_OUTPUT: &str = "results/close_friends.txt";
 
 pub fn diff_close_friends(
     export_dir: &Path,
@@ -20,6 +22,28 @@ pub fn diff_close_friends(
     (unexpected, missing)
 }
 
+fn format_diff(unexpected: &HashSet<String>, missing: &HashSet<String>) -> String {
+    if unexpected.is_empty() && missing.is_empty() {
+        return "Close friends list matches your standard list.\n".to_string();
+    }
+
+    let mut report = String::new();
+
+    let mut unexpected: Vec<&String> = unexpected.iter().collect();
+    unexpected.sort_by_key(|username| username.to_lowercase());
+    for username in unexpected {
+        report.push_str(&format!("-{username}\n"));
+    }
+
+    let mut missing: Vec<&String> = missing.iter().collect();
+    missing.sort_by_key(|username| username.to_lowercase());
+    for username in missing {
+        report.push_str(&format!("+{username}\n"));
+    }
+
+    report
+}
+
 #[derive(Parser)]
 #[command(about = "Diff your actual close friends list against your standard (day-ones) list.")]
 pub struct Args {
@@ -28,28 +52,18 @@ pub struct Args {
 
     #[arg(long, default_value = DEFAULT_STANDARD_CLOSE_FRIENDS)]
     pub standard: PathBuf,
+
+    /// Where to save the results
+    #[arg(long, default_value = DEFAULT_OUTPUT)]
+    pub output: PathBuf,
 }
 
 pub fn run() {
     let args = Args::parse();
     let (unexpected, missing) = diff_close_friends(&args.export_dir, &args.standard);
-
-    if unexpected.is_empty() && missing.is_empty() {
-        println!("Close friends list matches your standard list.");
-        return;
-    }
-
-    let mut unexpected: Vec<&String> = unexpected.iter().collect();
-    unexpected.sort_by_key(|username| username.to_lowercase());
-    for username in unexpected {
-        println!("-{username}");
-    }
-
-    let mut missing: Vec<&String> = missing.iter().collect();
-    missing.sort_by_key(|username| username.to_lowercase());
-    for username in missing {
-        println!("+{username}");
-    }
+    let report = format_diff(&unexpected, &missing);
+    print!("{report}");
+    save_report(&args.output, &report);
 }
 
 #[cfg(test)]

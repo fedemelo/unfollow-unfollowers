@@ -51,6 +51,27 @@ pub fn write_following(export_dir: &Path, usernames: &[&str]) {
     .unwrap();
 }
 
+pub fn write_following_with_timestamps(export_dir: &Path, entries: &[(&str, i64)]) {
+    let entries: Vec<Value> = entries
+        .iter()
+        .map(|(username, timestamp)| {
+            json!({
+                "title": username,
+                "string_list_data": [{
+                    "href": format!("https://www.instagram.com/_u/{username}"),
+                    "timestamp": timestamp,
+                }],
+            })
+        })
+        .collect();
+    let data = json!({ "relationships_following": entries });
+    fs::write(
+        export_dir.join("following.json"),
+        serde_json::to_string(&data).unwrap(),
+    )
+    .unwrap();
+}
+
 fn label_value_entries(usernames: &[&str]) -> Vec<Value> {
     usernames
         .iter()

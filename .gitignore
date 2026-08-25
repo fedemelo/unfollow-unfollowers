@@ -23,5 +23,8 @@ rustc-ice-*.txt
 data/*.txt
 !data/.gitkeep
 
+# Saved analysis output
+results/
+
 # macOS
 .DS_Store
