@@ -17,7 +17,7 @@ target
 rustc-ice-*.txt
 
 # Instagram data export
-export/
+/export/
 
 # Hand-curated username lists
 data/*.txt
