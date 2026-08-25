@@ -2,9 +2,23 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
+use chrono::{DateTime, NaiveDate};
 use serde_json::Value;
 
+use super::{DatedUsername, username_from_href};
+
+fn epoch_to_date(epoch: i64) -> Option<NaiveDate> {
+    DateTime::from_timestamp(epoch, 0).map(|dt| dt.naive_utc().date())
+}
+
 pub fn entry_usernames(entry: &Value) -> HashSet<String> {
+    entry_dated_usernames(entry)
+        .into_iter()
+        .map(|dated| dated.username)
+        .collect()
+}
+
+fn entry_dated_usernames(entry: &Value) -> Vec<DatedUsername> {
     let empty = Vec::new();
     let items = entry
         .get("string_list_data")
@@ -14,23 +28,29 @@ pub fn entry_usernames(entry: &Value) -> HashSet<String> {
     items
         .iter()
         .map(|item| {
-            item.get("value")
+            let username = item
+                .get("value")
                 .and_then(Value::as_str)
                 .map(str::to_string)
                 .unwrap_or_else(|| {
                     let href = item.get("href").and_then(Value::as_str).unwrap_or("");
-                    href.trim_end_matches('/')
-                        .rsplit('/')
-                        .next()
-                        .unwrap_or("")
-                        .to_string()
-                })
+                    username_from_href(href)
+                });
+            let date = item
+                .get("timestamp")
+                .and_then(Value::as_i64)
+                .and_then(epoch_to_date);
+            DatedUsername { username, date }
         })
         .collect()
 }
 
 fn usernames_from_string_list_data(entries: &[Value]) -> HashSet<String> {
     entries.iter().flat_map(entry_usernames).collect()
+}
+
+fn dated_usernames_from_string_list_data(entries: &[Value]) -> Vec<DatedUsername> {
+    entries.iter().flat_map(entry_dated_usernames).collect()
 }
 
 pub fn load_followers(export_dir: &Path) -> HashSet<String> {
@@ -57,7 +77,7 @@ pub fn load_followers(export_dir: &Path) -> HashSet<String> {
         .collect()
 }
 
-pub fn load_following(export_dir: &Path) -> HashSet<String> {
+pub fn load_following(export_dir: &Path) -> Vec<DatedUsername> {
     let path = export_dir.join("following.json");
     let contents = fs::read_to_string(&path).expect("failed to read following.json");
     let data: Value = serde_json::from_str(&contents).expect("invalid following.json");
@@ -67,7 +87,7 @@ pub fn load_following(export_dir: &Path) -> HashSet<String> {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    usernames_from_string_list_data(&entries)
+    dated_usernames_from_string_list_data(&entries)
 }
 
 pub fn label_value_username(entry: &Value) -> Option<String> {
@@ -88,12 +108,24 @@ fn usernames_from_label_values(entries: &[Value]) -> HashSet<String> {
     entries.iter().filter_map(label_value_username).collect()
 }
 
-pub fn load_pending_follow_requests(export_dir: &Path) -> HashSet<String> {
+pub fn load_pending_follow_requests(export_dir: &Path) -> Vec<DatedUsername> {
     let path = export_dir.join("pending_follow_requests.json");
     let contents = fs::read_to_string(&path).expect("failed to read pending_follow_requests.json");
     let entries: Vec<Value> =
         serde_json::from_str(&contents).expect("invalid pending_follow_requests.json");
-    usernames_from_label_values(&entries)
+
+    entries
+        .iter()
+        .filter_map(|entry| {
+            label_value_username(entry).map(|username| DatedUsername {
+                username,
+                date: entry
+                    .get("timestamp")
+                    .and_then(Value::as_i64)
+                    .and_then(epoch_to_date),
+            })
+        })
+        .collect()
 }
 
 pub fn load_close_friends(export_dir: &Path) -> HashSet<String> {
@@ -103,15 +135,12 @@ pub fn load_close_friends(export_dir: &Path) -> HashSet<String> {
     usernames_from_label_values(&entries)
 }
 
-pub fn is_deleted_account(username: &str) -> bool {
-    username.starts_with("__deleted__")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::test_support::{
         set, write_close_friends, write_followers, write_following, write_pending_follow_requests,
+        write_pending_follow_requests_with_timestamps,
     };
     use serde_json::json;
 
@@ -155,7 +184,11 @@ mod tests {
     fn load_following_reads_usernames() {
         let dir = tempfile::tempdir().unwrap();
         write_following(dir.path(), &["alice", "carol"]);
-        assert_eq!(load_following(dir.path()), set(&["alice", "carol"]));
+        let usernames: HashSet<String> = load_following(dir.path())
+            .into_iter()
+            .map(|entry| entry.username)
+            .collect();
+        assert_eq!(usernames, set(&["alice", "carol"]));
     }
 
     #[test]
@@ -174,9 +207,29 @@ mod tests {
     fn load_pending_follow_requests_reads_usernames() {
         let dir = tempfile::tempdir().unwrap();
         write_pending_follow_requests(dir.path(), &["dave", "erin"]);
+        let usernames: HashSet<String> = load_pending_follow_requests(dir.path())
+            .into_iter()
+            .map(|request| request.username)
+            .collect();
+        assert_eq!(usernames, set(&["dave", "erin"]));
+    }
+
+    #[test]
+    fn load_pending_follow_requests_reads_timestamps() {
+        let dir = tempfile::tempdir().unwrap();
+        let sent_at = NaiveDate::from_ymd_opt(2026, 8, 19)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc()
+            .timestamp();
+        write_pending_follow_requests_with_timestamps(dir.path(), &[("dave", sent_at)]);
+
+        let requests = load_pending_follow_requests(dir.path());
+        assert_eq!(requests.len(), 1);
         assert_eq!(
-            load_pending_follow_requests(dir.path()),
-            set(&["dave", "erin"])
+            requests[0].date,
+            Some(NaiveDate::from_ymd_opt(2026, 8, 19).unwrap())
         );
     }
 
@@ -185,11 +238,5 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         write_close_friends(dir.path(), &["frank", "grace"]);
         assert_eq!(load_close_friends(dir.path()), set(&["frank", "grace"]));
-    }
-
-    #[test]
-    fn is_deleted_account_detects_deleted_marker() {
-        assert!(is_deleted_account("__deleted__abc123"));
-        assert!(!is_deleted_account("regular_user"));
     }
 }

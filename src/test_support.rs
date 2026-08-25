@@ -78,6 +78,29 @@ pub fn write_pending_follow_requests(export_dir: &Path, usernames: &[&str]) {
     .unwrap();
 }
 
+pub fn write_pending_follow_requests_with_timestamps(export_dir: &Path, entries: &[(&str, i64)]) {
+    let data: Vec<Value> = entries
+        .iter()
+        .map(|(username, timestamp)| {
+            json!({
+                "timestamp": timestamp,
+                "media": [],
+                "label_values": [
+                    {"label": "URL", "value": ""},
+                    {"label": "Name", "value": username},
+                    {"label": "Username", "value": username},
+                ],
+                "fbid": "0",
+            })
+        })
+        .collect();
+    fs::write(
+        export_dir.join("pending_follow_requests.json"),
+        serde_json::to_string(&data).unwrap(),
+    )
+    .unwrap();
+}
+
 pub fn write_close_friends(export_dir: &Path, usernames: &[&str]) {
     let data = label_value_entries(usernames);
     fs::write(
