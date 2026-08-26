@@ -32,6 +32,36 @@ pub fn print_usernames(usernames: &HashSet<String>, description: &str) {
     print!("{}", format_usernames(usernames, description));
 }
 
+/// Formats a plus/minus diff report, with a header spelling out what each sign means so the
+/// convention never has to be inferred — `added` gets a leading `+`, `removed` a leading `-`.
+pub fn format_diff(
+    added: &HashSet<String>,
+    removed: &HashSet<String>,
+    added_label: &str,
+    removed_label: &str,
+    empty_message: &str,
+) -> String {
+    if added.is_empty() && removed.is_empty() {
+        return format!("{empty_message}\n");
+    }
+
+    let mut report = format!("+ {added_label}\n- {removed_label}\n\n");
+
+    let mut removed: Vec<&String> = removed.iter().collect();
+    removed.sort_by_key(|username| username.to_lowercase());
+    for username in removed {
+        report.push_str(&format!("-{username}\n"));
+    }
+
+    let mut added: Vec<&String> = added.iter().collect();
+    added.sort_by_key(|username| username.to_lowercase());
+    for username in added {
+        report.push_str(&format!("+{username}\n"));
+    }
+
+    report
+}
+
 /// Writes `report` to `path`, creating any missing parent directories, and prints where it went.
 pub fn save_report(path: &Path, report: &str) {
     if let Some(parent) = path
@@ -88,5 +118,25 @@ mod tests {
         let path = dir.path().join("nested").join("report.txt");
         save_report(&path, "hello");
         assert_eq!(fs::read_to_string(&path).unwrap(), "hello");
+    }
+
+    #[test]
+    fn format_diff_reports_empty_message_when_no_changes() {
+        let report = format_diff(
+            &HashSet::new(),
+            &HashSet::new(),
+            "added",
+            "removed",
+            "Nothing changed.",
+        );
+        assert_eq!(report, "Nothing changed.\n");
+    }
+
+    #[test]
+    fn format_diff_includes_legend_and_signed_sorted_lines() {
+        let added: HashSet<String> = ["Bob".to_string()].into_iter().collect();
+        let removed: HashSet<String> = ["alice".to_string()].into_iter().collect();
+        let report = format_diff(&added, &removed, "gained", "lost", "Nothing changed.");
+        assert_eq!(report, "+ gained\n- lost\n\n-alice\n+Bob\n");
     }
 }
