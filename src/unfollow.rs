@@ -32,14 +32,18 @@ pub fn unfollow(
 #[derive(Parser)]
 #[command(about = "Remove a username you've just unfollowed from the local export and lists.")]
 pub struct Args {
+    /// The username you just unfollowed
     pub username: String,
 
+    /// Path to the unzipped 'followers_and_following' export folder
     #[arg(long = "export-dir", default_value = DEFAULT_EXPORT_DIR)]
     pub export_dir: PathBuf,
 
+    /// Path to a text file of usernames (one per line, # comments) to never unfollow
     #[arg(long, default_value = DEFAULT_EXCLUSIONS)]
     pub exclusions: PathBuf,
 
+    /// Path to a text file of usernames previously confirmed by hand to be deleted/disabled
     #[arg(long = "known-disabled", default_value = DEFAULT_KNOWN_DISABLED)]
     pub known_disabled: PathBuf,
 }

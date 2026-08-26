@@ -47,9 +47,11 @@ fn format_diff(unexpected: &HashSet<String>, missing: &HashSet<String>) -> Strin
 #[derive(Parser)]
 #[command(about = "Diff your actual close friends list against your standard (day-ones) list.")]
 pub struct Args {
+    /// Path to the unzipped 'followers_and_following' export folder
     #[arg(default_value = DEFAULT_EXPORT_DIR)]
     pub export_dir: PathBuf,
 
+    /// Path to your hand-curated "day ones" list of usernames (one per line, # comments)
     #[arg(long, default_value = DEFAULT_STANDARD_CLOSE_FRIENDS)]
     pub standard: PathBuf,
 
