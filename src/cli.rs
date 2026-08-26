@@ -26,11 +26,19 @@ pub struct CommonArgs {
     /// Include accounts from --known-disabled, to manually re-verify whether they're back
     #[arg(long = "recheck-disabled")]
     pub recheck_disabled: bool,
+
+    /// Include accounts from --exclusions, overriding the "never suggest unfollowing" list
+    #[arg(long = "include-excluded")]
+    pub include_excluded: bool,
 }
 
 impl CommonArgs {
     pub fn resolve_filters(&self) -> (HashSet<String>, HashSet<String>) {
-        let exclusions = load_username_list(&self.exclusions);
+        let exclusions = if self.include_excluded {
+            HashSet::new()
+        } else {
+            load_username_list(&self.exclusions)
+        };
         let known_disabled = if self.recheck_disabled {
             HashSet::new()
         } else {
@@ -100,5 +108,22 @@ mod tests {
 
         let (_, known_disabled) = args.common.resolve_filters();
         assert_eq!(known_disabled, HashSet::new());
+    }
+
+    #[test]
+    fn resolve_filters_clears_exclusions_when_including_excluded() {
+        let dir = tempfile::tempdir().unwrap();
+        let exclusions_path = dir.path().join("exclusions.txt");
+        fs::write(&exclusions_path, "alice\n").unwrap();
+
+        let args = TestArgs::parse_from([
+            "prog",
+            "--exclusions",
+            exclusions_path.to_str().unwrap(),
+            "--include-excluded",
+        ]);
+
+        let (exclusions, _) = args.common.resolve_filters();
+        assert_eq!(exclusions, HashSet::new());
     }
 }
