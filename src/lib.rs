@@ -1,6 +1,7 @@
 pub mod cli;
 pub mod close_friends;
 pub mod export;
+pub mod followers_diff;
 pub mod formatting;
 pub mod lists;
 pub mod mutate;
