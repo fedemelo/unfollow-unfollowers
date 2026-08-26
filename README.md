@@ -15,6 +15,7 @@
 make non-followers      # accounts you follow that don't follow you back
 make pending-requests   # sent follow requests still pending
 make close-friends      # diff your close friends list against a standard one
+make diff                     # diff followers/following against the last saved snapshot
 make unfollow -- <username>   # after you unfollow someone, to delete it from the current export
 ```
 Each command prints its results to a file under `results/`.

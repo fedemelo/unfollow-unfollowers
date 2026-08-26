@@ -1,4 +1,4 @@
-.PHONY: build format lint test non-followers pending recheck-disabled unfollow close clean
+.PHONY: build format lint test non-followers pending recheck-disabled unfollow close diff clean
 
 build:
 	cargo build
@@ -31,3 +31,6 @@ unfollow:
 
 close:
 	cargo run --bin close_friends
+
+diff:
+	cargo run --bin followers_diff
