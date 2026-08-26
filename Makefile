@@ -1,7 +1,10 @@
-.PHONY: build format lint test non-followers pending recheck-disabled unfollow close
+.PHONY: build format lint test non-followers pending recheck-disabled unfollow close clean
 
 build:
 	cargo build
+
+clean:
+	rm -rf export/connections export/*.zip
 
 format:
 	cargo fmt
