@@ -15,4 +15,4 @@
     If you do a and b, the export will be ready in minutes; else, it might take hours or days.
 6. Start export.
 
-You will receive an email when the export is ready to download. Download it and unzip it into `export/` at the repo root or use the [Claude skill](/.claude/skills/refresh-reports/SKILL.md) and tell it where the zip file is.
+You will receive an email when the export is ready to download. Download it and unzip it into `export/` at the repo root or use the [Claude refresh-reports skill](/.claude/skills/refresh-reports/SKILL.md) and tell it where the zip file is.
