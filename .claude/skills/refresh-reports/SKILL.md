@@ -1,6 +1,6 @@
 ---
 name: refresh-reports
-description: Locates a freshly downloaded Instagram data export zip, unzips it into this repo's export/ directory (clearing out whatever was there before), and runs the non-followers, pending-requests, and close-friends reports. Use when asked to process, import, or refresh the Instagram export, or to regenerate the reports from a new download.
+description: Locates a freshly downloaded Instagram data export zip, unzips it into this repo's export/ directory (clearing out whatever was there before), and runs the non-followers, pending-requests, close-friends, and followers/following-diff reports. Use when asked to process, import, or refresh the Instagram export, or to regenerate the reports from a new download.
 ---
 
 When asked to process a new Instagram export and regenerate the reports, follow
@@ -67,7 +67,7 @@ what every report command reads from.
 
 ## 4. Run the reports
 
-Run all three read-only commands with their defaults — **do not ask the user
+Run all four read-only commands with their defaults — **do not ask the user
 for a cutoff date, and don't pass `--exclude-after` unless they explicitly
 asked for one in this request**:
 
@@ -75,6 +75,7 @@ asked for one in this request**:
 cargo run --bin non_followers
 cargo run --bin pending_requests
 cargo run --bin close_friends
+cargo run --bin followers_diff
 ```
 
 Let each command run to completion rather than piping its output through
@@ -84,18 +85,30 @@ before it saves the file.
 
 If the user did ask for a cutoff date in this request, pass
 `--exclude-after <YYYY-MM-DD>` to `non_followers` and/or `pending_requests` as
-they specified — `close_friends` has no such flag.
+they specified — `close_friends` and `followers_diff` have no such flag.
+
+`followers_diff` compares this export's followers/following against a
+snapshot saved locally under `data/` on the *previous* run of this command
+(not against this same export) and then overwrites that snapshot with the
+current lists. The first time it ever runs, there's no prior snapshot to
+diff against — it just saves the baseline and writes no report files. That's
+expected, not an error.
 
 ## 5. Report back
 
-Once all three commands have saved their files, respond with nothing but these
-three lines (paths relative to the repo root, matching each command's
-`--output` default unless the user overrode it):
+Once the commands have saved their files, respond with nothing but the lines
+below that apply (paths relative to the repo root, matching each command's
+`--output` default unless the user overrode it). Always include the first
+three. Include the last two only if `results/followers_diff.txt` and
+`results/following_diff.txt` actually exist — `followers_diff` skips writing
+them on its first-ever run (see step 4):
 
 ```
 Non-followers: results/non_followers.txt
 Pending requests: results/pending_requests.txt
 Close friends: results/close_friends.txt
+Followers diff: results/followers_diff.txt
+Following diff: results/following_diff.txt
 ```
 
-No counts, no preamble, no extra commentary — just the three lines.
+No counts, no preamble, no extra commentary — just the lines.
