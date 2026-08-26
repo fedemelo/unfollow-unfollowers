@@ -5,7 +5,7 @@ use clap::Parser;
 
 use crate::cli::DEFAULT_EXPORT_DIR;
 use crate::export::load_close_friends;
-use crate::formatting::save_report;
+use crate::formatting::{format_diff, save_report};
 use crate::lists::load_username_list;
 
 pub const DEFAULT_STANDARD_CLOSE_FRIENDS: &str = "data/standard_close_friends.txt";
@@ -22,26 +22,14 @@ pub fn diff_close_friends(
     (unexpected, missing)
 }
 
-fn format_diff(unexpected: &HashSet<String>, missing: &HashSet<String>) -> String {
-    if unexpected.is_empty() && missing.is_empty() {
-        return "Close friends list matches your standard list.\n".to_string();
-    }
-
-    let mut report = String::new();
-
-    let mut unexpected: Vec<&String> = unexpected.iter().collect();
-    unexpected.sort_by_key(|username| username.to_lowercase());
-    for username in unexpected {
-        report.push_str(&format!("-{username}\n"));
-    }
-
-    let mut missing: Vec<&String> = missing.iter().collect();
-    missing.sort_by_key(|username| username.to_lowercase());
-    for username in missing {
-        report.push_str(&format!("+{username}\n"));
-    }
-
-    report
+fn format_close_friends_diff(unexpected: &HashSet<String>, missing: &HashSet<String>) -> String {
+    format_diff(
+        missing,
+        unexpected,
+        "on your standard list but missing from close friends",
+        "in close friends but not on your standard list",
+        "Close friends list matches your standard list.",
+    )
 }
 
 #[derive(Parser)]
@@ -63,7 +51,7 @@ pub struct Args {
 pub fn run() {
     let args = Args::parse();
     let (unexpected, missing) = diff_close_friends(&args.export_dir, &args.standard);
-    let report = format_diff(&unexpected, &missing);
+    let report = format_close_friends_diff(&unexpected, &missing);
     print!("{report}");
     save_report(&args.output, &report);
 }
