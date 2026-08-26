@@ -8,43 +8,57 @@ these steps in order.
 
 ## 1. Find the zip
 
-Instagram names the export zip `instagram-<username>-<date>-<random>.zip` (e.g.
-`instagram-federico.melo-2026-08-25-drOUtrtK.zip`).
+If the skill was invoked with an explicit path to a zip (e.g. via `ARGUMENTS`),
+that path **is** the new export — use it directly and skip the search below.
+The path a user gives you always names the new export, never something to be
+cleaned away.
 
-Search `~/Downloads` first — that's where a browser drops a fresh download by
-default:
+Otherwise, run the search script — it deterministically checks, in fixed
+order, this repo's `export/` folder, then `~/Desktop`, then `~/Downloads`,
+short-circuiting on the first location whose newest `instagram-*.zip` was
+modified today, and otherwise falling back to the overall newest match:
 
 ```sh
-ls -t ~/Downloads/instagram-*.zip 2>/dev/null | head -1
+.claude/skills/refresh-reports/scripts/find_export.sh
 ```
 
-If nothing matches there, ask the user where to look. They'll typically say
-something like "check the Desktop" or "it's in Downloads" — map that to the
-actual folder (`~/Desktop`, `~/Downloads`, etc.) and repeat the search there.
-Don't guess a location the user didn't name and that isn't the `~/Downloads`
-default.
-
-If more than one match turns up in the same folder, use the most recently
-modified one (`ls -t` already sorts newest first) — that's the freshest export.
+It prints the chosen zip's path on success. If it exits non-zero (no output,
+no match anywhere), ask the user where to look — they'll typically name a
+folder like "check the Desktop" — map that to the actual path and check there
+directly. Don't guess a location the user didn't name and that isn't one of
+the three the script already covers.
 
 ## 2. Clear out the old export
 
-Before bringing in the new one, remove whatever is currently in this repo's
-`export/` directory — the previous zip and the previously unzipped
-`connections/` folder — so stale data never lingers alongside the new export:
+Before bringing in the new one, stale data from a previous run must not linger
+alongside it. `export/` is gitignored, so all of this is local cleanup only,
+not a git operation.
 
-```sh
-rm -rf export/connections export/*.zip
-```
+**Check whether the found zip already lives inside `export/` first** — resolve
+its path and compare against the repo's `export/` directory:
 
-`export/` is gitignored, so this is local cleanup only, not a git operation.
+- **If it's already in `export/`** (this happens when the user hands you a
+  path there directly, as in step 1): do **not** run `make clean` — that
+  target deletes `export/*.zip` and would destroy the very file you're about
+  to process. Instead, only remove the stale unzipped folder and any *other*
+  zips sitting next to it:
+  ```sh
+  rm -rf export/connections
+  find export -maxdepth 1 -name '*.zip' ! -name "$(basename <found_zip>)" -delete
+  ```
+- **If it's anywhere else** (e.g. `~/Downloads`): it's safe to fully clean
+  first, since the source file is untouched by this:
+  ```sh
+  make clean
+  ```
 
 ## 3. Move and unzip
 
-Move the zip found in step 1 into `export/`, then unzip it there:
+If the zip isn't already in `export/`, move it there; then unzip it (unzipping
+is safe either way — it just overwrites the same-named folder):
 
 ```sh
-mv <found_zip> export/
+mv <found_zip> export/   # skip this if <found_zip> is already inside export/
 unzip -q "export/$(basename <found_zip>)" -d export/
 ```
 
