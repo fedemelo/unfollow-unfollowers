@@ -1,3 +1,4 @@
+use std::collections::{BTreeSet, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -64,24 +65,27 @@ pub fn remove_from_pending_requests(export_dir: &Path, username: &str) -> bool {
 }
 
 pub fn remove_from_username_list(path: &Path, username: &str) -> bool {
+    !remove_usernames_from_list(path, &HashSet::from([username.to_string()])).is_empty()
+}
+
+/// Deletes every line naming one of `usernames`, keeping comments and other lines intact.
+/// Returns the usernames actually removed.
+pub fn remove_usernames_from_list(path: &Path, usernames: &HashSet<String>) -> BTreeSet<String> {
     if !path.exists() {
-        return false;
+        return BTreeSet::new();
     }
 
     let contents = fs::read_to_string(path).expect("failed to read file");
-    let lines: Vec<&str> = contents.lines().collect();
-    let filtered: Vec<&str> = lines
-        .iter()
-        .copied()
-        .filter(|line| line.trim() != username)
-        .collect();
+    let (removed, kept): (Vec<&str>, Vec<&str>) = contents
+        .lines()
+        .partition(|line| usernames.contains(line.trim()));
 
-    if filtered.len() == lines.len() {
-        return false;
+    if removed.is_empty() {
+        return BTreeSet::new();
     }
 
-    fs::write(path, format!("{}\n", filtered.join("\n"))).expect("failed to write file");
-    true
+    fs::write(path, format!("{}\n", kept.join("\n"))).expect("failed to write file");
+    removed.iter().map(|line| line.trim().to_string()).collect()
 }
 
 #[cfg(test)]
@@ -163,6 +167,20 @@ mod tests {
         let path = dir.path().join("list.txt");
         write_username_list(&path, &["alice"]);
         assert!(!remove_from_username_list(&path, "bob"));
+    }
+
+    #[test]
+    fn remove_usernames_from_list_removes_every_match_and_returns_them() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("list.txt");
+        write_username_list(&path, &["# comment", "alice", "bob", "carol", "alice"]);
+
+        let removed =
+            remove_usernames_from_list(&path, &HashSet::from(["alice".into(), "carol".into()]));
+
+        assert_eq!(removed, BTreeSet::from(["alice".into(), "carol".into()]));
+        let contents = fs::read_to_string(&path).unwrap();
+        assert_eq!(contents, "# comment\nbob\n");
     }
 
     #[test]
