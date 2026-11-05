@@ -3,10 +3,11 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 
-use crate::cli::DEFAULT_EXPORT_DIR;
+use crate::cli::{DEFAULT_EXPORT_DIR, DEFAULT_KNOWN_DISABLED};
 use crate::export::{load_followers, load_following};
 use crate::formatting::{format_diff, save_report};
 use crate::lists::{load_username_list, save_username_list};
+use crate::mutate::remove_usernames_from_list;
 
 pub const DEFAULT_FOLLOWERS_SNAPSHOT: &str = "data/snapshot_followers.txt";
 pub const DEFAULT_FOLLOWING_SNAPSHOT: &str = "data/snapshot_following.txt";
@@ -50,6 +51,21 @@ fn process_snapshot(
     save_username_list(snapshot_path, current);
 }
 
+/// The export keeps disabled accounts in your following list but drops them from your followers,
+/// so an account on the known-disabled list that follows you has been reactivated. Taking it off
+/// the list lets non_followers catch it if it later stops following you.
+fn forget_reactivated_accounts(known_disabled_path: &Path, followers: &HashSet<String>) {
+    let reactivated = remove_usernames_from_list(known_disabled_path, followers);
+    if !reactivated.is_empty() {
+        let names: Vec<&str> = reactivated.iter().map(String::as_str).collect();
+        println!(
+            "Removed from {} (they follow you again): {}",
+            known_disabled_path.display(),
+            names.join(", ")
+        );
+    }
+}
+
 #[derive(Parser)]
 #[command(about = "Diff current followers/following against the snapshot saved on the last run.")]
 pub struct Args {
@@ -72,6 +88,10 @@ pub struct Args {
     /// Where to save the following diff report
     #[arg(long, default_value = DEFAULT_FOLLOWING_OUTPUT)]
     pub following_output: PathBuf,
+
+    /// Known-disabled list to prune of accounts that follow you again
+    #[arg(long = "known-disabled", default_value = DEFAULT_KNOWN_DISABLED)]
+    pub known_disabled: PathBuf,
 }
 
 pub fn run() {
@@ -82,6 +102,8 @@ pub fn run() {
         .into_iter()
         .map(|entry| entry.username)
         .collect();
+
+    forget_reactivated_accounts(&args.known_disabled, &followers);
 
     process_snapshot(
         "followers",
