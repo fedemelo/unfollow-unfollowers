@@ -90,6 +90,16 @@ pub fn load_following(export_dir: &Path) -> Vec<DatedUsername> {
     dated_usernames_from_string_list_data(&entries)
 }
 
+/// Instagram localizes these labels to the account's language at export time.
+const USERNAME_LABELS: [&str; 2] = ["Username", "Benutzername"];
+
+fn is_username_label(label_value: &Value) -> bool {
+    label_value
+        .get("label")
+        .and_then(Value::as_str)
+        .is_some_and(|label| USERNAME_LABELS.contains(&label))
+}
+
 pub fn label_value_username(entry: &Value) -> Option<String> {
     let empty = Vec::new();
     let label_values = entry
@@ -99,7 +109,7 @@ pub fn label_value_username(entry: &Value) -> Option<String> {
 
     label_values
         .iter()
-        .find(|label_value| label_value.get("label").and_then(Value::as_str) == Some("Username"))
+        .find(|label_value| is_username_label(label_value))
         .and_then(|label_value| label_value.get("value").and_then(Value::as_str))
         .map(str::to_string)
 }
@@ -194,6 +204,12 @@ mod tests {
     #[test]
     fn label_value_username_found() {
         let entry = json!({"label_values": [{"label": "Username", "value": "dave"}]});
+        assert_eq!(label_value_username(&entry), Some("dave".to_string()));
+    }
+
+    #[test]
+    fn label_value_username_found_under_german_label() {
+        let entry = json!({"label_values": [{"label": "Benutzername", "value": "dave"}]});
         assert_eq!(label_value_username(&entry), Some("dave".to_string()));
     }
 
